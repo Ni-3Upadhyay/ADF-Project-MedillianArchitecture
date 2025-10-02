@@ -1,0 +1,309 @@
+{
+	"name": "dataflow_data_transformation",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "silverLayerOnPremData",
+						"type": "DatasetReference"
+					},
+					"name": "sourceOnPremDimAirline"
+				},
+				{
+					"dataset": {
+						"referenceName": "dim_flight",
+						"type": "DatasetReference"
+					},
+					"name": "dimFlight"
+				},
+				{
+					"dataset": {
+						"referenceName": "dimPassenger",
+						"type": "DatasetReference"
+					},
+					"name": "dimPassenger"
+				},
+				{
+					"dataset": {
+						"referenceName": "AzureSqlData",
+						"type": "DatasetReference"
+					},
+					"name": "azureSqlDataForSilverLayer"
+				},
+				{
+					"dataset": {
+						"referenceName": "Jsondata_from_api",
+						"type": "DatasetReference"
+					},
+					"name": "apiDataForSilverLayer"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink1",
+					"description": "now we can not just use dataset we will use inline dataset : Inline dataset is a dataset used for open table format."
+				},
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink2"
+				},
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink3"
+				},
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink4"
+				},
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink5"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumnCountryUppercase"
+				},
+				{
+					"name": "selectRequiredColumnsOnly"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "derivedColumnChnageMtoMale"
+				},
+				{
+					"name": "derivedColumnChangeFToFemale"
+				},
+				{
+					"name": "filterAgeGreaterThan25"
+				},
+				{
+					"name": "getFirstNameFromFullName"
+				},
+				{
+					"name": "castCostToNumber"
+				},
+				{
+					"name": "capitalize"
+				},
+				{
+					"name": "alterRow",
+					"description": "Add expressions to alter rows : this is actually to dump the data or sink the data and here we are doing it in silver layer which expects delta format data so i tells us what we want like insert the data update the data here we are doing upsert."
+				},
+				{
+					"name": "alterRow1"
+				},
+				{
+					"name": "alterRow2"
+				},
+				{
+					"name": "alterRow3"
+				},
+				{
+					"name": "alterRow4"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          airline_id as string,",
+				"          airline_name as string,",
+				"          country as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceOnPremDimAirline",
+				"source(output(",
+				"          flight_id as short,",
+				"          flight_number as string,",
+				"          departure_time as string,",
+				"          arrival_time as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> dimFlight",
+				"source(output(",
+				"          passenger_id as short,",
+				"          full_name as string,",
+				"          gender as string,",
+				"          age as short,",
+				"          country as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> dimPassenger",
+				"source(output(",
+				"          booking_id as short,",
+				"          passenger_id as short,",
+				"          flight_id as short,",
+				"          airline_id as short,",
+				"          origin_airport_id as short,",
+				"          destination_airport_id as short,",
+				"          booking_date as string,",
+				"          ticket_cost as double,",
+				"          flight_duration_mins as short,",
+				"          checkin_status as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> azureSqlDataForSilverLayer",
+				"source(output(",
+				"          airport_id as integer,",
+				"          airport_name as string,",
+				"          city as string,",
+				"          country as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine') ~> apiDataForSilverLayer",
+				"sourceOnPremDimAirline derive(country = upper(country)) ~> derivedColumnCountryUppercase",
+				"dimFlight select(mapColumn(",
+				"          flight_id,",
+				"          flight_number,",
+				"          departure_timestamp = departure_time,",
+				"          arrival_time",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectRequiredColumnsOnly",
+				"dimPassenger select(mapColumn(",
+				"          passenger_id,",
+				"          full_name,",
+				"          flag_gender = gender,",
+				"          age,",
+				"          country",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 derive(flag_gender = regexReplace(flag_gender, 'M',  \"Male\")) ~> derivedColumnChnageMtoMale",
+				"derivedColumnChnageMtoMale derive(flag_gender = regexReplace(flag_gender,'F',  'Female')) ~> derivedColumnChangeFToFemale",
+				"derivedColumnChangeFToFemale filter(age > 25) ~> filterAgeGreaterThan25",
+				"filterAgeGreaterThan25 derive(full_name = split(full_name, \" \")[1]) ~> getFirstNameFromFullName",
+				"azureSqlDataForSilverLayer cast(output(",
+				"          ticket_cost as integer",
+				"     ),",
+				"     errors: true) ~> castCostToNumber",
+				"apiDataForSilverLayer derive(airport_name = lower(airport_name)) ~> capitalize",
+				"derivedColumnCountryUppercase alterRow(upsertIf(1==1)) ~> alterRow",
+				"selectRequiredColumnsOnly alterRow(upsertIf(1==1)) ~> alterRow1",
+				"getFirstNameFromFullName alterRow(upsertIf(1==1)) ~> alterRow2",
+				"castCostToNumber alterRow(upsertIf(1==1)) ~> alterRow3",
+				"capitalize alterRow(upsertIf(1==1)) ~> alterRow4",
+				"alterRow sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'silver',",
+				"     folderPath: 'dim_airline',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: false,",
+				"     updateable: false,",
+				"     upsertable: true,",
+				"     keys:['airline_id'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1",
+				"alterRow1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'silver',",
+				"     folderPath: 'dim_flight',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: false,",
+				"     updateable: false,",
+				"     upsertable: true,",
+				"     keys:['flight_id'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink2",
+				"alterRow2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'silver',",
+				"     folderPath: 'dim_passenger',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: false,",
+				"     updateable: false,",
+				"     upsertable: true,",
+				"     keys:['passenger_id'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink3",
+				"alterRow3 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'silver',",
+				"     folderPath: 'azureSql',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: false,",
+				"     updateable: false,",
+				"     upsertable: true,",
+				"     keys:['booking_id'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink4",
+				"alterRow4 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'silver',",
+				"     folderPath: 'api_data',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: false,",
+				"     updateable: false,",
+				"     upsertable: true,",
+				"     keys:['airport_id'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink5"
+			]
+		}
+	}
+}

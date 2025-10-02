@@ -1,0 +1,17 @@
+{
+	"name": "onPrem",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "FileServer",
+		"typeProperties": {
+			"host": "C:\\nitin_project_data_factory",
+			"userId": "laptop-9uvr3uvp\\umesh",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiJjYTU5MWMxMi0yYzBlLTQ2NTItOTdjYy1kOTYwMTA3MzZhMDAiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "onpremIR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

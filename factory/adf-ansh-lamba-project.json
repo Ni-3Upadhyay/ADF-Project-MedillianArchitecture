@@ -1,0 +1,9 @@
+{
+	"name": "adf-ansh-lamba-project",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "5794f755-3ef7-49fd-8a1b-e3a09fecfab4",
+		"tenantId": "befaad41-94a2-4809-9f9d-3ea86d4949a1"
+	}
+}
